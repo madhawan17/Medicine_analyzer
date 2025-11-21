@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medicine Analyzer</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Poppins", sans-serif;
+            background: linear-gradient(135deg, #4e73df, #1cc7d0);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        .container {
+            width: 400px;
+            padding: 30px;
+            backdrop-filter: blur(15px);
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+            animation: fadeIn 0.8s ease-in-out;
+        }
+
+        .title {
+            margin: 0;
+            font-size: 30px;
+            font-weight: 700;
+        }
+
+        .tagline {
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .upload-box {
+            border: 2px dashed #fff;
+            padding: 30px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .upload-box:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px 20px;
+            width: 100%;
+            font-size: 16px;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            background: #1cc7d0;
+            color: #fff;
+            transition: 0.3s;
+        }
+
+        .btn:hover {
+            background: #17a2b8;
+        }
+
+        .loader {
+            margin: 20px auto;
+            border: 6px solid #fff;
+            border-top: 6px solid transparent;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .result-card {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .preview-img {
+            width: 100%;
+            margin-top: 10px;
+            border-radius: 12px;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="title">💊 Medicine Analyzer</h1>
+        <p class="tagline">Scan any medicine package & get instant AI recognition</p>
+
+        <div class="upload-box" id="uploadBox">
+            <p>📸 Drag & Drop Image OR Click to Upload</p>
+            <input type="file" id="fileInput" accept="image/*" hidden>
+        </div>
+
+        <button id="analyzeBtn" class="btn">Analyze Medicine</button>
+
+        <div id="loader" class="loader hidden"></div>
+
+        <div id="result" class="result-card hidden">
+            <h2>Result</h2>
+            <p><strong>Medicine:</strong> <span id="medName"></span></p>
+            <p><strong>Similarity Score:</strong> <span id="score"></span></p>
+            <div id="extraDetails"></div>
+            <img id="previewImg" class="preview-img" />
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        const uploadBox = document.getElementById("uploadBox");
+        const fileInput = document.getElementById("fileInput");
+        const analyzeBtn = document.getElementById("analyzeBtn");
+        const loader = document.getElementById("loader");
+        const resultCard = document.getElementById("result");
+
+        uploadBox.addEventListener("click", () => fileInput.click());
+
+        fileInput.addEventListener("change", (event) => {
+            selectedFile = event.target.files[0];
+            uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
+        });
+
+        // Drag & Drop
+        uploadBox.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            uploadBox.style.background = "rgba(255,255,255,0.3)";
+        });
+        uploadBox.addEventListener("dragleave", () => {
+            uploadBox.style.background = "transparent";
+        });
+        uploadBox.addEventListener("drop", (e) => {
+            e.preventDefault();
+            uploadBox.style.background = "transparent";
+            selectedFile = e.dataTransfer.files[0];
+            uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
+        });
+
+        analyzeBtn.addEventListener("click", async () => {
+            if (!selectedFile) {
+                alert("Please upload an image first.");
+                return;
+            }
+
+            loader.classList.remove("hidden");
+            resultCard.classList.add("hidden");
+
+            const formData = new FormData();
+            formData.append("file", selectedFile);
+
+            const API_URL = "http://127.0.0.1:8000/analyze";
+
+            const res = await fetch(API_URL, {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await res.json();
+
+            loader.classList.add("hidden");
+            resultCard.classList.remove("hidden");
+
+            const top = data.results[0];
+
+            document.getElementById("medName").textContent = top.label;
+            document.getElementById("score").textContent = top.score.toFixed(4);
+
+            let det = data.details;
+
+            let detailsHTML = `
+                <p><strong>Composition:</strong> ${det.Composition || "N/A"}</p>
+                <p><strong>Uses:</strong> ${det.Uses || "N/A"}</p>
+                <p><strong>Side Effects:</strong> ${det.Side_effects || "N/A"}</p>
+                <p><strong>Manufacturer:</strong> ${det.Manufacturer || "N/A"}</p>
+                <p><strong>Reviews:</strong> 
+                    👍 ${det["Excellent Review %"] || "N/A"}% &nbsp;
+                    😐 ${det["Average Review %"] || "N/A"}% &nbsp;
+                    👎 ${det["Poor Review %"] || "N/A"}%
+                </p>
+            `;
+
+
+            document.getElementById("extraDetails").innerHTML = detailsHTML;
+
+
+            const imgURL = URL.createObjectURL(selectedFile);
+            document.getElementById("previewImg").src = imgURL;
+        });
+    </script>
+
+</body>
+</html>

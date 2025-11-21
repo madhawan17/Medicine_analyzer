@@ -1,0 +1,77 @@
+# ============================
+# Python
+# ============================
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pkl
+
+# Virtual environment
+venv/
+env/
+ENV/
+.venv/
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
+
+# ============================
+# FastAPI / Backend
+# ============================
+temp_uploads/
+uploads/
+logs/
+
+# ============================
+# ML / AI Files
+# ============================
+embeddings.npz
+*.h5
+*.hdf5
+*.ckpt
+*.pb
+*.tflite
+
+# Model checkpints
+checkpoints/
+saved_models/
+
+# ============================
+# Project Data
+# ============================
+
+# If you DO NOT want to upload dataset images to GitHub:
+dataset/
+
+# If you DO want dataset uploaded, comment above and uncomment below:
+dataset/
+
+# CSV files (optional)
+*.csv
+
+# ============================
+# OS / Editor Files
+# ============================
+.DS_Store
+Thumbs.db
+
+# VSCode
+.vscode/
+
+# PyCharm
+.idea/
+
+# ============================
+# Node / Frontend (if added later)
+# ============================
+node_modules/
+dist/
+build/
+
+# ============================
+# Other
+# ============================
+*.log
+*.tmp
+*.bak
