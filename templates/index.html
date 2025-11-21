@@ -16,58 +16,46 @@
             height: 100vh;
             color: #fff;
         }
-
         .container {
             width: 400px;
             padding: 30px;
             backdrop-filter: blur(15px);
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             text-align: center;
-            animation: fadeIn 0.8s ease-in-out;
         }
-
-        .title {
-            margin: 0;
-            font-size: 30px;
-            font-weight: 700;
-        }
-
-        .tagline {
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
         .upload-box {
             border: 2px dashed #fff;
             padding: 30px;
             border-radius: 15px;
             cursor: pointer;
-            transition: 0.3s;
         }
-
         .upload-box:hover {
             background: rgba(255,255,255,0.2);
         }
-
         .btn {
             margin-top: 20px;
-            padding: 12px 20px;
+            padding: 12px;
             width: 100%;
-            font-size: 16px;
-            border: none;
             border-radius: 12px;
+            border: none;
+            font-size: 16px;
             cursor: pointer;
             background: #1cc7d0;
             color: #fff;
-            transition: 0.3s;
         }
-
-        .btn:hover {
-            background: #17a2b8;
+        .result-card {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            text-align: left;
         }
-
+        .preview-img {
+            width: 100%;
+            border-radius: 12px;
+            margin-top: 10px;
+        }
         .loader {
             margin: 20px auto;
             border: 6px solid #fff;
@@ -77,141 +65,184 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
-
-        .hidden {
-            display: none;
-        }
-
-        .result-card {
-            margin-top: 20px;
-            padding: 20px;
-            background: rgba(0,0,0,0.3);
-            border-radius: 12px;
-            text-align: left;
-        }
-
-        .preview-img {
-            width: 100%;
-            margin-top: 10px;
-            border-radius: 12px;
-        }
-
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        .hidden { display: none; }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
     </style>
-
 </head>
 <body>
 
-    <div class="container">
-        <h1 class="title">💊 Medicine Analyzer</h1>
-        <p class="tagline">Scan any medicine package & get instant AI recognition</p>
+<div class="container">
+    <h1>💊 Medicine Analyzer</h1>
 
-        <div class="upload-box" id="uploadBox">
-            <p>📸 Drag & Drop Image OR Click to Upload</p>
-            <input type="file" id="fileInput" accept="image/*" hidden>
-        </div>
-
-        <button id="analyzeBtn" class="btn">Analyze Medicine</button>
-
-        <div id="loader" class="loader hidden"></div>
-
-        <div id="result" class="result-card hidden">
-            <h2>Result</h2>
-            <p><strong>Medicine:</strong> <span id="medName"></span></p>
-            <p><strong>Similarity Score:</strong> <span id="score"></span></p>
-            <div id="extraDetails"></div>
-            <img id="previewImg" class="preview-img" />
-        </div>
+    <div class="upload-box" id="uploadBox">
+        <p>📸 Drag & Drop Image OR Click to Upload</p>
+        <input type="file" id="fileInput" accept="image/*" hidden>
     </div>
 
-    <script>
-        let selectedFile = null;
-        const uploadBox = document.getElementById("uploadBox");
-        const fileInput = document.getElementById("fileInput");
-        const analyzeBtn = document.getElementById("analyzeBtn");
-        const loader = document.getElementById("loader");
-        const resultCard = document.getElementById("result");
+    <button id="analyzeBtn" class="btn">Analyze Medicine</button>
 
-        uploadBox.addEventListener("click", () => fileInput.click());
+    <div id="loader" class="loader hidden"></div>
 
-        fileInput.addEventListener("change", (event) => {
-            selectedFile = event.target.files[0];
-            uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
-        });
+    <div id="result" class="result-card hidden">
+        <h2>Result</h2>
+        <p><strong>Medicine:</strong> <span id="medName"></span></p>
+        <p><strong>Similarity Score:</strong> <span id="score"></span></p>
 
-        // Drag & Drop
-        uploadBox.addEventListener("dragover", (e) => {
-            e.preventDefault();
-            uploadBox.style.background = "rgba(255,255,255,0.3)";
-        });
-        uploadBox.addEventListener("dragleave", () => {
-            uploadBox.style.background = "transparent";
-        });
-        uploadBox.addEventListener("drop", (e) => {
-            e.preventDefault();
-            uploadBox.style.background = "transparent";
-            selectedFile = e.dataTransfer.files[0];
-            uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
-        });
+        <div id="extraDetails"></div>
 
-        analyzeBtn.addEventListener("click", async () => {
-            if (!selectedFile) {
-                alert("Please upload an image first.");
-                return;
-            }
+        <button id="speakBtn" class="btn" style="background:#ff9800;">
+            🔊 विवरण सुनें
+        </button>
 
-            loader.classList.remove("hidden");
-            resultCard.classList.add("hidden");
+        <img id="previewImg" class="preview-img" />
+    </div>
+</div>
+<script>
+    // Securely injected from backend
+    const GROQ_KEY = "{{ groq_key }}";
+</script>
 
-            const formData = new FormData();
-            formData.append("file", selectedFile);
+<script>
+let selectedFile = null;
 
-            const API_URL = "http://127.0.0.1:8000/analyze";
+// ===============================
+// Upload Handling
+// ===============================
+const uploadBox = document.getElementById("uploadBox");
+const fileInput = document.getElementById("fileInput");
 
-            const res = await fetch(API_URL, {
-                method: "POST",
-                body: formData
-            });
+uploadBox.addEventListener("click", () => fileInput.click());
 
-            const data = await res.json();
+fileInput.addEventListener("change", e => {
+    selectedFile = e.target.files[0];
+    uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
+});
 
-            loader.classList.add("hidden");
-            resultCard.classList.remove("hidden");
+// ===============================
+// Analyze image
+// ===============================
+document.getElementById("analyzeBtn").addEventListener("click", async () => {
+    if (!selectedFile) return alert("Upload an image first!");
 
-            const top = data.results[0];
+    document.getElementById("loader").classList.remove("hidden");
 
-            document.getElementById("medName").textContent = top.label;
-            document.getElementById("score").textContent = top.score.toFixed(4);
+    const formData = new FormData();
+    formData.append("file", selectedFile);
 
-            let det = data.details;
+    const res = await fetch("/analyze", { method: "POST", body: formData });
+    const data = await res.json();
 
-            let detailsHTML = `
-                <p><strong>Composition:</strong> ${det.Composition || "N/A"}</p>
-                <p><strong>Uses:</strong> ${det.Uses || "N/A"}</p>
-                <p><strong>Side Effects:</strong> ${det.Side_effects || "N/A"}</p>
-                <p><strong>Manufacturer:</strong> ${det.Manufacturer || "N/A"}</p>
-                <p><strong>Reviews:</strong> 
-                    👍 ${det["Excellent Review %"] || "N/A"}% &nbsp;
-                    😐 ${det["Average Review %"] || "N/A"}% &nbsp;
-                    👎 ${det["Poor Review %"] || "N/A"}%
-                </p>
-            `;
+    window.currentDetails = data.details;
+
+    document.getElementById("loader").classList.add("hidden");
+    document.getElementById("result").classList.remove("hidden");
+
+    document.getElementById("medName").textContent = data.results[0].label;
+    document.getElementById("score").textContent = data.results[0].score.toFixed(4);
+
+    document.getElementById("extraDetails").innerHTML = `
+        <p><strong>Composition:</strong> ${data.details.Composition}</p>
+        <p><strong>Uses:</strong> ${data.details.Uses}</p>
+        <p><strong>Side Effects:</strong> ${data.details.Side_effects}</p>
+        <p><strong>Manufacturer:</strong> ${data.details.Manufacturer}</p>
+    `;
+
+    document.getElementById("previewImg").src = URL.createObjectURL(selectedFile);
+});
 
 
-            document.getElementById("extraDetails").innerHTML = detailsHTML;
+// ===============================
+// ⭐ 1. Generate long Hindi explanation using GROQ
+// ===============================
+async function generateHindiExplanation(details) {
+    const englishText = `
+    Medicine Name: ${details["Medicine Name"]}.
+    Composition: ${details["Composition"]}.
+    Uses: ${details["Uses"]}.
+    Side Effects: ${details["Side_effects"]}.
+    Manufacturer: ${details["Manufacturer"]}.
+    `;
+
+    console.log("Sending to Groq:", englishText);
+
+    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+            "Authorization": "Bearer " + GROQ_KEY,
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            model: "llama-3.1-8b-instant",
+            messages: [
+                {
+                    role: "system",
+                    content:
+                        "You are a medical expert. Translate the English medical details into Hindi and generate a long, patient-friendly explanation."
+                },
+                {
+                    role: "user",
+                    content: englishText
+                }
+            ]
+        })
+    });
+
+    const json = await response.json();
+    console.log("Groq response:", json);
+
+    if (json.error) {
+        console.error("Groq Error:", json.error);
+        return "त्रुटि: हिंदी विवरण उत्पन्न नहीं किया जा सका।";
+    }
+
+    return json.choices[0].message.content;
+}
 
 
-            const imgURL = URL.createObjectURL(selectedFile);
-            document.getElementById("previewImg").src = imgURL;
-        });
-    </script>
+
+
+// ===============================
+// ⭐ 2. Speak Hindi
+// ===============================
+speechSynthesis.getVoices();
+speechSynthesis.onvoiceschanged = () => {
+    console.log("Voices Loaded:", speechSynthesis.getVoices());
+};
+
+function speakHindi(text) {
+    if (!text || text.trim() === "") {
+        alert("Hindi generation failed.");
+        return;
+    }
+
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "hi-IN";
+
+    const voices = speechSynthesis.getVoices();
+    const hVoice = voices.find(v => v.lang.includes("hi"));
+    if (hVoice) u.voice = hVoice;
+
+    speechSynthesis.cancel();
+    speechSynthesis.speak(u);
+}
+
+
+// ===============================
+// ⭐ 3. Button: Generate + Speak
+// ===============================
+document.getElementById("speakBtn").addEventListener("click", async () => {
+    const det = window.currentDetails;
+    if (!det) return alert("No details found!");
+
+    const hindiText = await generateHindiExplanation(det);
+
+    console.log("Hindi Explanation:", hindiText);
+
+    speakHindi(hindiText);
+});
+</script>
+
+
 
 </body>
 </html>

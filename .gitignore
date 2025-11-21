@@ -75,3 +75,4 @@ build/
 *.log
 *.tmp
 *.bak
+*.env
