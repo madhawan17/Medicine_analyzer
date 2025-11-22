@@ -2,7 +2,7 @@ fastapi
 uvicorn[standard]
 python-dotenv
 pandas
-tensorflow==2.20.0   # or the TF version you used (ensure compatibility)
+tensorflow-cpu==2.20.0  # or the TF version you used (ensure compatibility)
 numpy
 pillow
 scikit-learn
