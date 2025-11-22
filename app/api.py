@@ -6,7 +6,7 @@ import os
 import pandas as pd
 from dotenv import load_dotenv
 
-from query_image import find_similar
+from app.query_image import find_similar
 
 # Load environment variables
 load_dotenv()
