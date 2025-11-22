@@ -26,7 +26,7 @@ logs/
 # ============================
 # ML / AI Files
 # ============================
-embeddings.npz
+# embeddings.npz
 *.h5
 *.hdf5
 *.ckpt
