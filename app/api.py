@@ -22,7 +22,7 @@ os.makedirs(TEMP_DIR, exist_ok=True)
 # ---------------------------
 # LOAD CSV DATA
 # ---------------------------
-CSV_FILE = "medicine_data.csv"
+CSV_FILE = "Medicine_data.csv"
 df = pd.read_csv(CSV_FILE)
 DETAILS_DB = { str(row["Medicine Name"]).strip(): row.to_dict() for _, row in df.iterrows() }
 
