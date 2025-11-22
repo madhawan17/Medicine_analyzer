@@ -97,17 +97,14 @@
         <img id="previewImg" class="preview-img" />
     </div>
 </div>
+
 <script>
-    // Securely injected from backend
     const GROQ_KEY = "{{ groq_key }}";
 </script>
 
 <script>
 let selectedFile = null;
 
-// ===============================
-// Upload Handling
-// ===============================
 const uploadBox = document.getElementById("uploadBox");
 const fileInput = document.getElementById("fileInput");
 
@@ -118,8 +115,9 @@ fileInput.addEventListener("change", e => {
     uploadBox.innerHTML = `<p>📄 ${selectedFile.name}</p>`;
 });
 
+
 // ===============================
-// Analyze image
+// Analyze Image
 // ===============================
 document.getElementById("analyzeBtn").addEventListener("click", async () => {
     if (!selectedFile) return alert("Upload an image first!");
@@ -152,9 +150,10 @@ document.getElementById("analyzeBtn").addEventListener("click", async () => {
 
 
 // ===============================
-// ⭐ 1. Generate long Hindi explanation using GROQ
+// GENERATE SHORT NATURAL HINDI EXPLANATION
 // ===============================
 async function generateHindiExplanation(details) {
+
     const englishText = `
     Medicine Name: ${details["Medicine Name"]}.
     Composition: ${details["Composition"]}.
@@ -163,8 +162,6 @@ async function generateHindiExplanation(details) {
     Manufacturer: ${details["Manufacturer"]}.
     `;
 
-    console.log("Sending to Groq:", englishText);
-
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -172,12 +169,12 @@ async function generateHindiExplanation(details) {
             "Content-Type": "application/json"
         },
         body: JSON.stringify({
-            model: "llama-3.1-8b-instant",
+            model: "llama-3.3-70b-versatile",
             messages: [
                 {
                     role: "system",
                     content:
-                        "You are a medical expert. Translate the English medical details into Hindi and generate a long, patient-friendly explanation."
+                    "Translate all information into PURE HINDI ONLY. Write exactly 4–5 full sentences in ONE paragraph. NO bullet points, NO bold text, NO lists, NO English words, NO markdown, NO newlines. The paragraph must be very smooth for text-to-speech. Use simple spoken Hindi suitable for patients."
                 },
                 {
                     role: "user",
@@ -188,39 +185,47 @@ async function generateHindiExplanation(details) {
     });
 
     const json = await response.json();
-    console.log("Groq response:", json);
+    console.log("GROQ RAW:", json);
 
     if (json.error) {
-        console.error("Groq Error:", json.error);
         return "त्रुटि: हिंदी विवरण उत्पन्न नहीं किया जा सका।";
     }
 
-    return json.choices[0].message.content;
+    let hindi = json.choices[0].message.content;
+
+    // cleanup for TTS
+    hindi = hindi.replace(/\*/g, "");
+    hindi = hindi.replace(/[-•●]/g, " ");
+    hindi = hindi.replace(/\n/g, " ");
+    hindi = hindi.replace(/\s\s+/g, " ");
+
+    return hindi.trim();
 }
 
 
-
-
 // ===============================
-// ⭐ 2. Speak Hindi
+// HINDI SPEAK FUNCTION
 // ===============================
 speechSynthesis.getVoices();
 speechSynthesis.onvoiceschanged = () => {
-    console.log("Voices Loaded:", speechSynthesis.getVoices());
+    console.log("Voices Ready");
 };
 
 function speakHindi(text) {
     if (!text || text.trim() === "") {
-        alert("Hindi generation failed.");
+        alert("Hindi explanation failed");
         return;
     }
 
     const u = new SpeechSynthesisUtterance(text);
     u.lang = "hi-IN";
+    u.rate = 0.95;
+    u.pitch = 1;
 
     const voices = speechSynthesis.getVoices();
-    const hVoice = voices.find(v => v.lang.includes("hi"));
-    if (hVoice) u.voice = hVoice;
+    const hindiVoice = voices.find(v => v.lang.includes("hi"));
+
+    if (hindiVoice) u.voice = hindiVoice;
 
     speechSynthesis.cancel();
     speechSynthesis.speak(u);
@@ -228,12 +233,10 @@ function speakHindi(text) {
 
 
 // ===============================
-// ⭐ 3. Button: Generate + Speak
+// SPEAK BUTTON → Generate + Speak
 // ===============================
 document.getElementById("speakBtn").addEventListener("click", async () => {
     const det = window.currentDetails;
-    if (!det) return alert("No details found!");
-
     const hindiText = await generateHindiExplanation(det);
 
     console.log("Hindi Explanation:", hindiText);
@@ -241,8 +244,6 @@ document.getElementById("speakBtn").addEventListener("click", async () => {
     speakHindi(hindiText);
 });
 </script>
-
-
 
 </body>
 </html>
